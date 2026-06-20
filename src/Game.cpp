@@ -1,13 +1,13 @@
 #include "Game.h"
 
-Game::Game(int xId, int oId) : xPlayerId(xId), oPlayerId(oId) 
+Game::Game(uint32_t xId, uint32_t oId) : xPlayerId(xId), oPlayerId(oId) 
 {
     for (int i = 0; i < 3; ++i)
         for (int j = 0; j < 3; ++j)
             board[i][j] = Cell::Empty;
 }
 
-bool Game::makeMove(int playerId, int row, int col)
+bool Game::makeMove(uint32_t playerId, int row, int col)
 {
     if (!isValidMove(row, col)) return false;
 
@@ -21,7 +21,9 @@ void Game::play()
     int row, col;
     std::cout << "Game started" << std::endl;
 
-    currentPlayerId = xPlayerId;
+    srand(time(0));
+
+    currentPlayerId = (rand() % 2 == 1) ? xPlayerId : oPlayerId;
 
     while (!isFull()) {
         drawBoard();
@@ -50,6 +52,11 @@ void Game::play()
 
     drawBoard();
     std::cout << "It's a draw!" << std::endl;
+}
+
+bool Game::draw(uint32_t id1, uint32_t id2)
+{
+    return false;
 }
 
 bool Game::isValidMove(int row, int col)

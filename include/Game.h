@@ -2,24 +2,29 @@
 
 #include <iostream>
 #include <array>
+#include <inttypes.h>
 
 class Game
 {
 public:
-    Game(int xId, int oId);
+    Game(uint32_t xId, uint32_t oId);
 
     enum class Cell {Empty, X, O};
 
-    bool makeMove(int playerId, int row, int col);
+    bool makeMove(uint32_t playerId, int row, int col);
     void play();
+    std::pair<uint32_t, uint32_t> getPlayersIds() const {
+        return {xPlayerId, oPlayerId};
+    }
 
 private:
     std::array<std::array<Cell, 3>, 3> board;
     int filledCells = 0;
-    int currentPlayerId;
-    int xPlayerId;
-    int oPlayerId;
+    uint32_t currentPlayerId;
+    uint32_t xPlayerId;
+    uint32_t oPlayerId;
 
+    bool draw(uint32_t id1, uint32_t id2);
     bool isValidMove(int row, int col);
     bool isFull() const { return filledCells == 9; }
     void drawBoard();
