@@ -1,0 +1,36 @@
+<html>
+    <head></head>
+    <body>
+        <h1>Welcome to Tic-Tac-Toe server!</h1>
+        <p>Try <a href='/hi'>/hi</a> for a text message.</p>
+        <input type="text" id="text-to-send">
+        <button id="btn">Click!</button>
+    </body>
+    <script>
+        async function btnClickHandler() {
+            // let text = 'Button clicked at ' + new Date().toLocaleTimeString();
+            let text = new Date().toLocaleTimeString() + ' ' + document.getElementById('text-to-send').value;
+            try {
+                let response = await fetch('/button-click', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'text/plain'
+                },
+                body: text
+                });
+                if (response.ok) {
+                    let result = await response.text();
+                    console.log('Server response:', result);
+                } else {
+                    console.error('Server error:', response.status);
+                }
+            } catch (error) {
+                console.error('Fetch error:', error);
+            }
+            
+        }
+
+        const button = document.querySelector('#btn');
+        button.addEventListener('click', btnClickHandler);
+    </script>
+</html>

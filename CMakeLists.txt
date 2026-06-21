@@ -9,4 +9,4 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
 
 add_executable(${PROJECT_NAME} src/main.cpp src/Game.cpp src/GameManager.cpp)
 
-target_include_directories(${PROJECT_NAME} PRIVATE include)
+target_include_directories(${PROJECT_NAME} PRIVATE third_party)
