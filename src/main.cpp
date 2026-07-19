@@ -6,6 +6,8 @@
 GameManager* gameManager = nullptr;
 bool end = false;
 
+std::unordered_map<uint32_t, httplib::ws::WebSocket> connections;
+
 void processInput(int input) 
 {
     switch (input)
@@ -46,6 +48,7 @@ int main()
     // game.play();
 
     httplib::Server srv;
+    
 
     // srv.Post("/", [](const httplib::Request& req, httplib::Response& res){
     //     std::string body = req.body;
@@ -61,7 +64,7 @@ int main()
 
     srv.Post("/button-click", [](const httplib::Request& req, httplib::Response& res) {
         std::string body = req.body;
-        std::cout << "Button clicked! Message: " << body << std::endl;
+        std::cout << "[http] Button clicked! Message: " << body << std::endl;
 
         res.set_content("Button click processed! Recieved: " + body, "text/plain");
     });
@@ -70,8 +73,20 @@ int main()
         res.set_content("Hello, world!", "text/plain");
     });
 
+    std::unordered_map<httplib::ws::WebSocket*, uint32_t> gameByWs;
+    srv.WebSocket("/ws", [&gameByWs](const httplib::Request& req, httplib::ws::WebSocket &ws) {
+        static int id = 0;
+        id++;
+        gameByWs.emplace(&ws, id); 
+        std::string msg;
+        while (ws.read(msg)) {
+            std::cout << "[ws] id = " << gameByWs[&ws] << " : " << msg << std::endl;
+            ws.send("echo: " + msg);
+        }
+    });
+
     std::cout << "server is running on http://127.0.0.1:8080" << std::endl;
-    srv.listen("0.0.0.0", 8080);
+    srv.listen("127.0.0.1", 8080);
 
     // gameManager = GameManager::getInstance();
 

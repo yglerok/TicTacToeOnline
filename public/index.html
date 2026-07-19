@@ -5,6 +5,7 @@
         <p>Try <a href='/hi'>/hi</a> for a text message.</p>
         <input type="text" id="text-to-send">
         <button id="btn">Click!</button>
+        <button id="wsbtn">WS!</button>
     </body>
     <script>
         async function btnClickHandler() {
@@ -32,5 +33,33 @@
 
         const button = document.querySelector('#btn');
         button.addEventListener('click', btnClickHandler);
+
+        let socket = new WebSocket("ws://127.0.0.1:8080/ws");
+        socket.onopen = function(e) {
+            console.log("[open] Connection established");
+            socket.send("Connection established");
+        }
+
+        socket.onmessage = function(event) {
+            console.log(`[message] Get data from server: ${event.data}`);
+        };
+
+        socket.onclose = function(event) {
+            if (event.wasClean) {
+                console.log(`[close] Connection close clean (code=${event.code}, reason=${event.reason})`);
+            } else {
+                console.log(`[close] Connection terminated`);
+            }
+        }
+
+        socket.onerror = function(error) {
+            console.error(`[error]`);
+        };
+
+        const wsbutton = document.querySelector('#wsbtn');
+        wsbutton.addEventListener('click', function(){
+            socket.send("ws button clicked!");
+        })
+ 
     </script>
 </html>
