@@ -7,6 +7,6 @@ project(${PROJECT_NAME})
 set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -Wall -Wextra -DDEBUG")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
 
-add_executable(${PROJECT_NAME} src/main.cpp src/Game.cpp src/GameManager.cpp)
+add_executable(${PROJECT_NAME} src/main.cpp src/Game.cpp src/GameManager.cpp src/ConnectionManager.cpp)
 
 target_include_directories(${PROJECT_NAME} PRIVATE third_party)

@@ -1,10 +1,16 @@
 #include "Game.h"
 
-Game::Game(uint32_t xId, uint32_t oId) : xPlayerId(xId), oPlayerId(oId) 
+Game::Game(uint32_t gameId, uint32_t playerId) : id(gameId)
 {
     for (int i = 0; i < 3; ++i)
         for (int j = 0; j < 3; ++j)
             board[i][j] = Cell::Empty;
+
+    if (xPlayerId == 0)
+        xPlayerId = playerId;
+    else 
+        std::cout << "[Game] Player (id=" << playerId << ") is already in game" << std::endl;
+
 }
 
 bool Game::makeMove(uint32_t playerId, int row, int col)
@@ -14,6 +20,23 @@ bool Game::makeMove(uint32_t playerId, int row, int col)
     board[row][col] = (playerId == xPlayerId) ? Cell::X : Cell::O;
     filledCells++;
     return true;
+}
+
+void Game::finish()
+{
+    switch (status)
+    {
+    case Status::Waiting:
+    case Status::Playing:
+        status = Status::Ended;
+        std::cout << "[Game] Game (id=" << id << ") changed status to Ended" << std::endl;
+        break;
+    case Status::Ended:
+        std::cout << "[Game] Game (id=" << id <<") already ended" << std::endl;
+        break;
+    default:
+        break;
+    }
 }
 
 void Game::play()
@@ -54,9 +77,43 @@ void Game::play()
     std::cout << "It's a draw!" << std::endl;
 }
 
-bool Game::draw(uint32_t id1, uint32_t id2)
+bool Game::addPlayer(uint32_t playerId)
 {
-    return false;
+    if (oPlayerId == 0) {
+        oPlayerId = playerId;
+        std::cout << "[Game] Player (id=" << playerId << ") added in game (id=" << id << ")" << std::endl;
+        start();
+    } else {
+        std::cout << "[Game] Player (id=" << playerId << ") is already in game" << std::endl;
+        return false;
+    }
+    return true;
+}
+
+void Game::draw()
+{
+    // simple algo, just imitating random
+    if ((xPlayerId + oPlayerId) % 2 == 0)
+        std::swap(xPlayerId, oPlayerId);
+}
+
+void Game::start()
+{
+    switch (status)
+    {
+    case Status::Waiting:
+        status = Status::Playing;
+        std::cout << "[Game] Game (id=" << id << ") changed status to Playing" << std::endl;
+        break;
+    case Status::Playing:
+        std::cout << "[Game] Game (id=" << id <<") already playing" << std::endl;
+        break;
+    case Status::Ended:
+        std::cout << "[Game] Game (id=" << id <<") already ended" << std::endl;
+        break;
+    default:
+        break;
+    }
 }
 
 bool Game::isValidMove(int row, int col)
