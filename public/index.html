@@ -5,6 +5,7 @@
         <p>Try <a href='/hi'>/hi</a> for a text message.</p>
         <input type="text" id="text-to-send">
         <button id="btn">Click!</button>
+        <input type="number" min="0" max="8" step="1" value="0" id="move-indx">
         <button id="wsbtn">WS!</button>
     </body>
     <script>
@@ -58,7 +59,11 @@
 
         const wsbutton = document.querySelector('#wsbtn');
         wsbutton.addEventListener('click', function(){
-            socket.send("ws button clicked!");
+            let move = {
+                type: "move",
+                index: document.getElementById('move-indx').value
+            };
+            socket.send(JSON.stringify(move));
         })
  
     </script>
