@@ -1,44 +1,27 @@
 #include "GameManager.h"
 #include "ConnectionManager.h"
+#include "nlohmann/json.hpp"
 
 #include <iostream>
 
-GameManager* gameManager = nullptr;
-bool end = false;
-
-// void processInput(int input) 
-// {
-//     switch (input)
-//         {
-//         case 1: {
-//             uint32_t id1, id2;
-//             std::cout << "Enter players id: ";
-//             std::cin >> id1 >> id2;
-//             gameManager->createNewGame(id1, id2);
-//             break;
-//         }
-//         case 2: {
-//             uint32_t id;
-//             std::cout << "Enter game id: ";
-//             std::cin >> id;
-//             gameManager->daleteFinishedGame(id);
-//             break;
-//         }
-//         case 3: {
-//             const auto& games = gameManager->getAllGames();
-//             std::cout << "id\t xId\t oId" << std::endl;
-//             for (const auto& [id, game] : games) {
-//                 std::cout << id << "\t" << game->getPlayersIds().first << "\t" << game->getPlayersIds().second << std::endl;
-//             }
-//             break;
-//         }
-//         case 4:
-//             end = true;
-//             break;
-//         default:
-//             break;
-//         }
-// }
+std::string statusToStr(Game::Status status) {
+    std::string str;
+    switch (status)
+    {
+    case Game::Status::Waiting:
+        str = "Waiting";
+        break;
+    case Game::Status::Playing:
+        str = "Playing";
+        break;
+    case Game::Status::Finished:
+        str = "Finished";
+        break;
+    default:
+        break;
+    }
+    return str;
+}
 
 int main()
 {
@@ -79,38 +62,131 @@ int main()
         if (gameId == 0) {
             // Waiting game not found -> creating new
             gameId = GameManager::getInstance()->createNewGame(playerId);
+
+            nlohmann::json j = {
+                {"action", "gameCreated"},
+                {"gameId", gameId},
+                {"playerId", playerId}
+            };
+            ConnectionManager::getInstance()->sendMessage(playerId, j.dump());
+
         } else {
             // Waiting game found -> join it -> start it
             GameManager::getInstance()->joinGame(gameId, playerId);
+
+            nlohmann::json j = {
+                {"action", "gameJoined"},
+                {"gameId", gameId},
+                {"playerId", playerId}
+            };
+            ConnectionManager::getInstance()->sendMessage(playerId, j.dump());
+
+            auto players = GameManager::getInstance()->getGame(gameId)->getPlayersIds();
+            uint32_t currentPlayer = GameManager::getInstance()->getGame(gameId)->getCurrentPlayerId();
+            j = {
+                {"action", "gameStarted"},
+                {"opponentId", players.second},
+                {"playerSymbol", "X"},
+                {"currentPlayerId", currentPlayer}
+            };
+            ConnectionManager::getInstance()->sendMessage(players.first, j.dump());
+            j = {
+                {"action", "gameStarted"},
+                {"opponentId", players.first},
+                {"playerSymbol", "O"},
+                {"currentPlayerId", currentPlayer}
+            };
+            ConnectionManager::getInstance()->sendMessage(players.second, j.dump());
         }
 
-        ws.send("Connected to game (id=" + std::to_string(gameId) + ")");
+        // Send opponent info for both
+
+        //ws.send("Connected to game (id=" + std::to_string(gameId) + ")");
 
         std::string msg;
         while (ws.read(msg)) {
-            std::cout << "[ws] id = " << playerId << " : " << msg << std::endl;
-            ws.send("echo: " + msg);
+            // std::cout << "[ws] id = " << playerId << " : " << msg << std::endl;
+            // ws.send("echo: " + msg);
+
+            try {
+                nlohmann::json data = nlohmann::json::parse(msg);
+                if (data["action"] == "makeMove") {
+                    uint8_t index = data["index"];
+                    auto game = GameManager::getInstance()->getGame(gameId);
+                    if (playerId == game->getCurrentPlayerId()) {
+                        std::cout << "Player (id=" << playerId << ") trying to make a move (" << index / 3 << 
+                        ", " << index % 3 << ")" << std::endl;
+                        if (!game->makeMove(index / 3, index % 3)) {
+                            std::cout << "Invalid move" << std::endl;
+                            nlohmann::json error {
+                                {"action", "error"},
+                                {"type", "not valid move"}
+                            };
+                            ws.send(error.dump());
+                            continue;
+                        }
+                    } else {
+                        nlohmann::json error {
+                            {"action", "error"},
+                            {"type", "not your turn"}
+                        };
+                        ws.send(error.dump());
+                        continue;
+                    }
+
+                    // Check for a win
+                    nlohmann::json j;
+                    if (game->isBoardFull()) {
+                        std::cout << "It's a draw" << std::endl;
+                        j = {
+                            {"action", "gameFinished"},
+                            {"winner", NULL},
+                            {"draw", true}
+                        };
+                    } else if (game->checkWin(game->getCurrentPlayerId())) {
+                        std::cout << "Player (id=" << game->getCurrentPlayerId() << ") wins!" << std::endl;
+                        j = {
+                            {"action", "gameFinished"},
+                            {"winner", game->getCurrentPlayerId()},
+                            {"draw", false}
+                        };
+                    } else {
+                        std::cout << "Default move" << std::endl;
+                        j = {
+                            {"action", "gameState"},
+                            {"gameId", gameId},
+                            {"board", game->getBoard()},
+                            {"currentPlayerId", game->getCurrentPlayerId()},
+                            {"gameStatus", statusToStr(game->getStatus())},
+                            {"winner", NULL},
+                            {"draw", false}
+                        };
+                    }
+
+                    
+                    //ws.send(j.dump());
+                    auto players = GameManager::getInstance()->getGame(gameId)->getPlayersIds();
+                    ConnectionManager::getInstance()->sendMessage(players.first, j.dump());
+                    ConnectionManager::getInstance()->sendMessage(players.second, j.dump());
+
+                    game->switchPlayers();
+                }
+            } catch (const std::exception& e) {
+                nlohmann::json error {
+                    {"action", "error"},
+                    {"type", e.what()}
+                };
+                ws.send(error.dump());
+            }
+            
         }
 
-        // Think about game end
-        // delete connection -> disconnect player from game -> check if game finished -> delete game
         ConnectionManager::getInstance()->deleteConnection(playerId);
         GameManager::getInstance()->disconnectPlayer(gameId, playerId);
     });
 
     std::cout << "server is running on http://127.0.0.1:8080" << std::endl;
     srv.listen("127.0.0.1", 8080);
-
-    // gameManager = GameManager::getInstance();
-
-    // while (!end) {
-    //     std::cout << "==========" << std::endl;
-    //     std::cout << "1 - add new game\n2 - delete game\n3 - show list\n4 - exit" << std::endl;
-    //     std::cout << "==========" << std::endl;
-    //     int input;
-    //     std::cin >> input;
-    //     processInput(input);
-    // }
 
     return 0;
 }

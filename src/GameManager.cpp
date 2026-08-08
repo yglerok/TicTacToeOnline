@@ -27,13 +27,17 @@ void GameManager::joinGame(uint32_t gameId, uint32_t playerId)
         std::cout << "[Game Manager] Cannot join the game (id=" << gameId << "), player (id=" << playerId << ") is already in game (id=" << a << ")" << std::endl;
     }
     gameByPlayer[playerId] = gameId;
+
+    // After second player joining make a draw
+    getGame(gameId)->draw();
 }
 
 void GameManager::disconnectPlayer(uint32_t gameId, uint32_t playerId)
 {
     std::lock_guard lock(mx);
 
-    if (!getGame(gameId)) return;
+    auto game = getGame(gameId);
+    if (!game) return;
 
     // delete player
     // game status -> ended
@@ -46,8 +50,8 @@ void GameManager::disconnectPlayer(uint32_t gameId, uint32_t playerId)
     gameByPlayer.erase(playerId);
     std::cout << "[Game Manager] Player (id=" << playerId << ") disconnected from game (id=" << gameId << ")" << std::endl;
     // then check if game already has been finished
-    auto game = getGame(gameId);
-    if (game->getStatus() == Game::Status::Ended) {
+    
+    if (game->getStatus() == Game::Status::Finished) {
         // if true (deleted first player before) -> deleteFinishedGame()
         deleteFinishedGame(gameId);
     } else {
@@ -69,7 +73,10 @@ int GameManager::findWaitingGame()
 
 void GameManager::deleteFinishedGame(uint32_t id)
 {
-    std::lock_guard lock(mx);
+    // std::cout << "deleteFinishedGame()" << std::endl;
+    // std::lock_guard lock(mx);
+
+    std::cout << "[Game Manager] Trying to delete game" << std::endl;
 
     if (!getGame(id)) return;
 

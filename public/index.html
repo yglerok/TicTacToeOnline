@@ -5,6 +5,7 @@
         <p>Try <a href='/hi'>/hi</a> for a text message.</p>
         <input type="text" id="text-to-send">
         <button id="btn">Click!</button>
+        <input type="number" min="0" max="8" step="1" value="0" id="move-indx">
         <button id="wsbtn">WS!</button>
     </body>
     <script>
@@ -37,11 +38,15 @@
         let socket = new WebSocket("ws://127.0.0.1:8080/ws");
         socket.onopen = function(e) {
             console.log("[open] Connection established");
-            socket.send("Connection established");
+            //socket.send("Connection established");
         }
 
+        let gameId = 0;
+        let playerId = 0;
         socket.onmessage = function(event) {
             console.log(`[message] Get data from server: ${event.data}`);
+            
+
         };
 
         socket.onclose = function(event) {
@@ -58,8 +63,16 @@
 
         const wsbutton = document.querySelector('#wsbtn');
         wsbutton.addEventListener('click', function(){
-            socket.send("ws button clicked!");
-        })
+            let indx = document.getElementById('move-indx').value;
+            let move = {
+                action: "makeMove",
+                // gameId: ,
+                // playerId: ,
+                index: Number(indx)
+            };
+            console.log(`Sent:` + JSON.stringify(move));
+            socket.send(JSON.stringify(move));
+        });
  
     </script>
 </html>
