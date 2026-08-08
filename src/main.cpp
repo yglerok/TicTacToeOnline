@@ -135,33 +135,27 @@ int main()
                     }
 
                     // Check for a win
-                    nlohmann::json j;
+                    bool isDraw = false;
+                    uint32_t winnerId = 0;
                     if (game->isBoardFull()) {
                         std::cout << "It's a draw" << std::endl;
-                        j = {
-                            {"action", "gameFinished"},
-                            {"winner", NULL},
-                            {"draw", true}
-                        };
+                        isDraw = true;
                     } else if (game->checkWin(game->getCurrentPlayerId())) {
                         std::cout << "Player (id=" << game->getCurrentPlayerId() << ") wins!" << std::endl;
-                        j = {
-                            {"action", "gameFinished"},
-                            {"winner", game->getCurrentPlayerId()},
-                            {"draw", false}
-                        };
+                        winnerId = game->getCurrentPlayerId();
                     } else {
                         std::cout << "Default move" << std::endl;
-                        j = {
-                            {"action", "gameState"},
-                            {"gameId", gameId},
-                            {"board", game->getBoard()},
-                            {"currentPlayerId", game->getCurrentPlayerId()},
-                            {"gameStatus", statusToStr(game->getStatus())},
-                            {"winner", NULL},
-                            {"draw", false}
-                        };
                     }
+
+                    nlohmann::json j = {
+                        {"action", "gameState"},
+                        {"gameId", gameId},
+                        {"board", game->getBoard()},
+                        {"currentPlayerId", game->getCurrentPlayerId()},
+                        {"gameStatus", statusToStr(game->getStatus())},
+                        {"winner", winnerId},
+                        {"draw", isDraw}
+                    };
 
                     
                     //ws.send(j.dump());
