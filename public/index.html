@@ -38,11 +38,15 @@
         let socket = new WebSocket("ws://127.0.0.1:8080/ws");
         socket.onopen = function(e) {
             console.log("[open] Connection established");
-            socket.send("Connection established");
+            //socket.send("Connection established");
         }
 
+        let gameId = 0;
+        let playerId = 0;
         socket.onmessage = function(event) {
             console.log(`[message] Get data from server: ${event.data}`);
+            
+
         };
 
         socket.onclose = function(event) {
@@ -59,12 +63,16 @@
 
         const wsbutton = document.querySelector('#wsbtn');
         wsbutton.addEventListener('click', function(){
+            let indx = document.getElementById('move-indx').value;
             let move = {
-                type: "move",
-                index: document.getElementById('move-indx').value
+                action: "makeMove",
+                // gameId: ,
+                // playerId: ,
+                index: Number(indx)
             };
+            console.log(`Sent:` + JSON.stringify(move));
             socket.send(JSON.stringify(move));
-        })
+        });
  
     </script>
 </html>

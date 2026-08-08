@@ -13,13 +13,29 @@ Game::Game(uint32_t gameId, uint32_t playerId) : id(gameId)
 
 }
 
-bool Game::makeMove(uint32_t playerId, int row, int col)
+bool Game::makeMove(int row, int col)
 {
+    std::lock_guard lock(mx);
+
     if (!isValidMove(row, col)) return false;
 
-    board[row][col] = (playerId == xPlayerId) ? Cell::X : Cell::O;
+    board[row][col] = (currentPlayerId == xPlayerId) ? Cell::X : Cell::O;
     filledCells++;
+    // switchPlayers();
     return true;
+}
+
+std::vector<std::string> Game::getBoard()
+{
+    std::lock_guard lock(mx);
+
+    std::vector<std::string> boardVector;
+    for (int i = 0; i < 3; ++i) {
+        for (int j = 0; j < 3; ++j) {
+            boardVector.push_back((board[i][j] == Cell::Empty) ? " " : ((board[i][j] == Cell::X) ? "X" : "O"));
+        }
+    }
+    return boardVector;
 }
 
 void Game::finish()
@@ -28,11 +44,11 @@ void Game::finish()
     {
     case Status::Waiting:
     case Status::Playing:
-        status = Status::Ended;
-        std::cout << "[Game] Game (id=" << id << ") changed status to Ended" << std::endl;
+        status = Status::Finished;
+        std::cout << "[Game] Game (id=" << id << ") changed status to Finished" << std::endl;
         break;
-    case Status::Ended:
-        std::cout << "[Game] Game (id=" << id <<") already ended" << std::endl;
+    case Status::Finished:
+        std::cout << "[Game] Game (id=" << id <<") already finished" << std::endl;
         break;
     default:
         break;
@@ -48,7 +64,7 @@ void Game::play()
 
     currentPlayerId = (rand() % 2 == 1) ? xPlayerId : oPlayerId;
 
-    while (!isFull()) {
+    while (!isBoardFull()) {
         drawBoard();
 
         while (true) {
@@ -62,7 +78,7 @@ void Game::play()
                 std::cout << "Invalid move. Try again." << std::endl;    
         }
 
-        makeMove(currentPlayerId, row, col);
+        makeMove(row, col);
 
         if (checkWin(currentPlayerId)) {
             drawBoard();
@@ -77,8 +93,28 @@ void Game::play()
     std::cout << "It's a draw!" << std::endl;
 }
 
+std::pair<uint32_t, uint32_t> Game::getPlayersIds()
+{
+    std::lock_guard lock(mx);
+    return {xPlayerId, oPlayerId};
+}
+
+Game::Status Game::getStatus()
+{
+    std::lock_guard lock(mx);
+    return status;
+}
+
+uint32_t Game::getCurrentPlayerId()
+{
+    std::lock_guard lock(mx);
+    return currentPlayerId;
+}
+
 bool Game::addPlayer(uint32_t playerId)
 {
+    std::lock_guard lock(mx);
+
     if (oPlayerId == 0) {
         oPlayerId = playerId;
         std::cout << "[Game] Player (id=" << playerId << ") added in game (id=" << id << ")" << std::endl;
@@ -92,9 +128,12 @@ bool Game::addPlayer(uint32_t playerId)
 
 void Game::draw()
 {
-    // simple algo, just imitating random
-    if ((xPlayerId + oPlayerId) % 2 == 0)
-        std::swap(xPlayerId, oPlayerId);
+    std::lock_guard lock(mx);
+
+    std::random_device rd;
+    std::mt19937 gen(rd());
+
+    currentPlayerId = (gen() % 2) ? xPlayerId : oPlayerId;
 }
 
 void Game::start()
@@ -108,8 +147,8 @@ void Game::start()
     case Status::Playing:
         std::cout << "[Game] Game (id=" << id <<") already playing" << std::endl;
         break;
-    case Status::Ended:
-        std::cout << "[Game] Game (id=" << id <<") already ended" << std::endl;
+    case Status::Finished:
+        std::cout << "[Game] Game (id=" << id <<") already finished" << std::endl;
         break;
     default:
         break;
@@ -134,11 +173,14 @@ void Game::drawBoard()
 
 void Game::switchPlayers()
 {
+    std::lock_guard lock(mx);
+
     currentPlayerId = (currentPlayerId == xPlayerId) ? oPlayerId : xPlayerId;
 }
 
-bool Game::checkWin(int playerId)
+bool Game::checkWin(uint32_t playerId)
 {
+    std::lock_guard lock(mx);
     Cell sym = (playerId == xPlayerId) ? Cell::X : Cell::O;
     
     for (int i = 0; i < 3; ++i)
@@ -155,6 +197,18 @@ bool Game::checkWin(int playerId)
         return true;
 
     return false;
+}
+
+bool Game::isBoardFull()
+{
+    std::lock_guard lock(mx);
+    return (filledCells == 9);
+}
+
+uint32_t Game::getId()
+{
+    std::lock_guard lock(mx);
+    return id;
 }
 
 char Game::charFromId(int playerId)
