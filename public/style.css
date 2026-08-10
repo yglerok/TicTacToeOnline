@@ -6,17 +6,17 @@
     /* ===== PLAYERS ===== */
     --color-x: #B86F78;
     --color-o: #68704B;
+    --x-text: #FFF3E4;
+    --o-text: #F4EBD7;
 
     /* ===== INFO PANEL ===== */
     --panel: #E7D9C3;
 
     /* ===== PLAYER STATES ===== */
-    --active: #B86F78;
-    --opponent: #68704B;
-
-    --active-text: #FFF3E4;
-    --opponent-text: #F4EBD7;
-    --waiting-text: #71685B;
+    --you: var(--color-x);
+    --opponent: var(--color-o);
+    --you-text: var(--x-text);
+    --opponent-text: var(--o-text);
 
     /* ===== ACCENTS ===== */
     --accent: #C49A45;
@@ -29,10 +29,6 @@
     /* ===== TEXT ===== */
     --text: #302A23;
     --text-secondary: #706657;
-
-    --connection-on: #8A9A5B;
-    --connection-off: #9A8F7D;
-    --connection-waiting: #C4B89F;
 
     --font-heading: 'Space Grotesk', sans-serif;
     --font-body: 'Space Grotesk', sans-serif;
@@ -222,7 +218,7 @@ body {
     display: flex;
     border-radius: var(--radius);
     overflow: hidden;
-    background-color: var(--opponent);
+    /* background-color: var(--opponent); */
 }
 
 .player {
@@ -231,23 +227,37 @@ body {
     padding: 10px 6px;
     font-family: var(--font-accent);
     font-size: 0.85rem;
-    color: var(--opponent-text);
+    color: var(--text);
+    border: 1px solid var(--bg);
+}
 
-    /* display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center; */
+.player.you {
+    border-radius: var(--radius) 0 0 var(--radius);
+}
+
+.player.active.you {
+    background-color: var(--you);
+    color: var(--you-text);
+}
+
+.player.opponent {
+    border-radius: 0 var(--radius) var(--radius) 0;
+} 
+
+.player.active.opponent {
+    background-color: var(--opponent);
+    color: var(--opponent-text);
 }
 
 .player.active {
-    background-color: var(--active);
-    color: var(--active-text);
     font-weight: 700;
 }
 
 .player.waiting {
     color: var(--opponent-text);
     font-style: italic;
+    background-color: var(--opponent);
+    /* opacity: 0.3; */
 }
 
 .player .sym {
