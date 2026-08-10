@@ -137,14 +137,15 @@ int main()
                     // Check for a win
                     bool isDraw = false;
                     uint32_t winnerId = 0;
-                    if (game->isBoardFull()) {
-                        std::cout << "It's a draw" << std::endl;
-                        isDraw = true;
-                    } else if (game->checkWin(game->getCurrentPlayerId())) {
+                    if (game->checkWin(game->getCurrentPlayerId())) {
                         std::cout << "Player (id=" << game->getCurrentPlayerId() << ") wins!" << std::endl;
                         winnerId = game->getCurrentPlayerId();
+                    } else if (game->isBoardFull()) {
+                        std::cout << "It's a draw" << std::endl;
+                        isDraw = true;
                     } else {
                         std::cout << "Default move" << std::endl;
+                        game->switchPlayers();
                     }
 
                     nlohmann::json j = {
@@ -163,7 +164,7 @@ int main()
                     ConnectionManager::getInstance()->sendMessage(players.first, j.dump());
                     ConnectionManager::getInstance()->sendMessage(players.second, j.dump());
 
-                    game->switchPlayers();
+                    // game->switchPlayers();
                 }
             } catch (const std::exception& e) {
                 nlohmann::json error {
