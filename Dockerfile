@@ -17,9 +17,8 @@ COPY src/ ./src/
 
 COPY public/ ./public
 
-RUN mkdir build && cd build && \
-    cmake .. && \
-    make -j$(nproc)
+RUN cmake -S . -B build -DBUILD_TESTS=OFF && \
+    cmake --build build -j$(nproc)
 
 # Runtime stage
 

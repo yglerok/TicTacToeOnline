@@ -46,7 +46,7 @@ private:
     std::array<std::array<Cell, 3>, 3> board;
     Status status = Status::Waiting;
     int filledCells = 0;
-    uint32_t currentPlayerId;
+    uint32_t currentPlayerId = 0;
     uint32_t xPlayerId = 0;
     uint32_t oPlayerId = 0;
 
