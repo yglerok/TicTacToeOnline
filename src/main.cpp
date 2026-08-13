@@ -1,10 +1,11 @@
 #include "GameManager.h"
 #include "ConnectionManager.h"
+#include "Database.h"
+
 #include "nlohmann/json.hpp"
 
-#include <iostream>
-
-std::string statusToStr(Game::Status status) {
+std::string statusToStr(Game::Status status)
+{
     std::string str;
     switch (status)
     {
@@ -29,7 +30,6 @@ int main()
     // game.play();
 
     httplib::Server srv;
-    
 
     // srv.Post("/", [](const httplib::Request& req, httplib::Response& res){
     //     std::string body = req.body;
@@ -43,19 +43,24 @@ int main()
     //     res.set_content("", "text/html");
     // });
 
-    srv.Post("/button-click", [](const httplib::Request& req, httplib::Response& res) {
+    srv.Post("/button-click", [](const httplib::Request &req, httplib::Response &res)
+             {
         std::string body = req.body;
         std::cout << "[http] Button clicked! Message: " << body << std::endl;
 
-        res.set_content("Button click processed! Recieved: " + body, "text/plain");
-    });
+        res.set_content("Button click processed! Recieved: " + body, "text/plain"); });
 
-    srv.Get("/hi", [](const httplib::Request &, httplib::Response &res) {
-        res.set_content("Hello, world!", "text/plain");
-    });
+    srv.Get("/hi", [](const httplib::Request &, httplib::Response &res)
+            { res.set_content("Hello, world!", "text/plain"); });
 
-    //std::unordered_map<httplib::ws::WebSocket*, uint32_t> gameByWs;
-    srv.WebSocket("/ws", [](const httplib::Request& req, httplib::ws::WebSocket &ws) {
+    // std::unordered_map<httplib::ws::WebSocket*, uint32_t> gameByWs;
+    srv.WebSocket("/ws", [](const httplib::Request &req, httplib::ws::WebSocket &ws) {
+
+        nlohmann::json j = {
+                                {"action", "getName"}
+                            };
+                            ws.send(j.dump());
+
         uint32_t playerId = ConnectionManager::getInstance()->addConnection(&ws); 
 
         uint32_t gameId = GameManager::getInstance()->findWaitingGame();
@@ -103,6 +108,7 @@ int main()
 
         //ws.send("Connected to game (id=" + std::to_string(gameId) + ")");
 
+        std::string playerName;
         std::string msg;
         while (ws.read(msg)) {
             // std::cout << "[ws] id = " << playerId << " : " << msg << std::endl;
@@ -158,13 +164,32 @@ int main()
                         {"draw", isDraw}
                     };
 
-                    
-                    //ws.send(j.dump());
                     auto players = GameManager::getInstance()->getGame(gameId)->getPlayersIds();
                     ConnectionManager::getInstance()->sendMessage(players.first, j.dump());
                     ConnectionManager::getInstance()->sendMessage(players.second, j.dump());
 
-                    // game->switchPlayers();
+                    if (isDraw || winnerId > 0) {
+                        try {
+                            Database::getInstance()->saveResult(
+                                ConnectionManager::getInstance()->getUserByPlayer(players.first).value(), 
+                                ConnectionManager::getInstance()->getUserByPlayer(players.second).value(),
+                                ConnectionManager::getInstance()->getUserByPlayer(winnerId)
+                            );
+                        } catch(const std::exception& e) {
+                            std::cerr << e.what() << '\n';
+                        }
+                    }
+                    
+
+                } else if (data["action"] == "sendName") {
+                    playerName = data["name"];
+                    
+                    try {
+                        uint32_t userId = Database::getInstance()->findOrCreateUser(playerName);
+                        ConnectionManager::getInstance()->addUserByPlayer(playerId, userId);
+                    } catch (const std::exception& e) {
+                        std::cerr << "[Database] " << e.what() << std::endl;
+                    }
                 }
             } catch (const std::exception& e) {
                 nlohmann::json error {
@@ -174,10 +199,10 @@ int main()
                 ws.send(error.dump());
             }
             
-        }
+        }        
 
         ConnectionManager::getInstance()->deleteConnection(playerId);
-        GameManager::getInstance()->disconnectPlayer(gameId, playerId);
+        GameManager::getInstance()->disconnectPlayer(gameId, playerId); 
     });
 
     std::cout << "server is running on http://127.0.0.1:8080" << std::endl;

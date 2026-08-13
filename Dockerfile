@@ -3,9 +3,12 @@ FROM ubuntu:latest AS build
 
 RUN apt-get update && apt-get install -y \
     build-essential \
-    cmake \
     git \
+    python3-pip \
+    libpq-dev \
     && rm -rf /var/lib/apt/lists/*
+
+RUN pip install --break-system-packages cmake==3.28.3
 
 WORKDIR /app
 
@@ -26,6 +29,7 @@ FROM ubuntu:latest
 
 RUN apt-get update && apt-get install -y \
     libstdc++6 \
+    libpq5 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

@@ -1,5 +1,26 @@
 services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: tictactoe
+      POSTGRES_PASSWORD: devpassword
+      POSTGRES_DB: tictactoe_db
+    ports:
+      - '5433:5432'
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./sql/scheme.sql:/docker-entrypoint-initdb.d/scheme.sql
+
   app:
     build: .
     ports:
       - '8080:8080'
+    environment:
+      DB_HOST: db
+      DB_PASSWORD: devpassword
+    depends_on:
+      - db
+
+volumes:
+  postgres_data: 

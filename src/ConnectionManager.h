@@ -4,6 +4,7 @@
 
 #include <unordered_map>
 #include <mutex>
+#include <optional>
 
 class ConnectionManager {
 public:
@@ -16,6 +17,9 @@ public:
     int addConnection(httplib::ws::WebSocket* ws);
     void deleteConnection(uint32_t playerId);
     void sendMessage(uint32_t playerId, const std::string& msg);
+
+    void addUserByPlayer(uint32_t playerId, uint32_t userId);
+    std::optional<uint32_t> getUserByPlayer(uint32_t playerId) const;
     // uint32_t getGameByConnection(httplib::ws::WebSocket* ws) {
     //     if (gameByWs.contains(ws)) return gameByWs[ws];
     // };
@@ -28,7 +32,7 @@ public:
 
 private:
     static ConnectionManager* instance;
-    std::mutex mx;
+    mutable std::mutex mx;
     uint32_t nextPlayerId = 1;
 
     ConnectionManager() = default;
@@ -37,5 +41,6 @@ private:
     ConnectionManager& operator=(const ConnectionManager&) = delete;
 
     std::unordered_map<uint32_t, httplib::ws::WebSocket*> connections;
+    std::unordered_map<uint32_t, uint32_t> userIdByPlayerId;
     //std::unordered_map<uint32_t, httplib::ws::WebSocket*> wsByGame;
 };

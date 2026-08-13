@@ -25,6 +25,7 @@ class App {
         this.connection.on("gameJoined", (data) => this.handleGameJoined(data));
         this.connection.on("gameStarted", (data) => this.handleGameStarted(data));
         this.connection.on("gameState", (data) => this.handleGameState(data));
+        this.connection.on("getName", (data) => this.handleGetName(data));
         this.connection.on("error", (data) => { });
     }
 
@@ -63,6 +64,11 @@ class App {
         }
         
         this.panel.render(viewModel);
+    }
+
+    handleGetName() {
+        var name = prompt("Enter your name", "guest");
+        this.connection.send({action: "sendName", name: name});
     }
 }
 
